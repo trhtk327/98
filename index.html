@@ -1,61 +1,41 @@
-
-
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>צ'אט הארי פוטר</title>
+<title>צ'אט מתקדם</title>
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 
-html,body{
-  height:100%;
-  overflow:hidden;
-  overscroll-behavior:none;
+body{
   font-family:Arial;
-  background:#3f5f73; /* 🔥 בהיר יותר */
-}
-
-/* אפליקציה */
-.app{
-  width:95%;
-  max-width:500px;
-  height:calc(100vh - 115px);
-  margin:10px auto;
-  background:#e4f1f9; /* 🔥 בהיר מאוד */
-  display:flex;
-  flex-direction:column;
-  border-radius:18px;
-  border:3px solid #4da6ff;
-  box-shadow:0 0 25px rgba(0,0,0,0.3);
+  background:#3f5f73;
   overflow:hidden;
 }
 
 /* HEADER */
-.header{
-  padding:12px;
-  text-align:center;
-  background:#6ec1ff;
-  font-weight:bold;
+.top-header{
+  height:60px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#203a43;
   color:#fff;
+  font-weight:bold;
 }
 
-/* ADMIN */
-.adminBar{
-  display:none;
-  gap:6px;
-  padding:6px;
-  justify-content:center;
-  background:#cfe8f7;
-}
-.adminBar button{
-  background:#4da6ff;
-  border:none;
-  color:#fff;
-  padding:6px 8px;
-  border-radius:6px;
+/* APP */
+.app{
+  width:95%;
+  max-width:500px;
+  height:calc(100vh - 80px);
+  margin:10px auto;
+  background:#e4f1f9;
+  border-radius:15px;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
 }
 
 /* CHAT */
@@ -65,58 +45,60 @@ html,body{
   padding:10px;
   display:flex;
   flex-direction:column;
-  background:#d9ecf7; /* 🔥 בהיר */
 }
 
-/* הודעות */
+/* MESSAGE */
 .msg{
   max-width:75%;
   padding:10px;
-  margin:5px 0;
+  margin:6px 0;
   border-radius:14px;
-  position:relative;
   display:flex;
   flex-direction:column;
+  animation:fade .2s;
 }
 
-/* רגיל */
-.me{
-  background:#6ec1ff;
-  align-self:flex-end;
-}
-.other{
-  background:#9cc7e4;
-  align-self:flex-start;
+@keyframes fade{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1}
 }
 
-/* מנהל */
-.adminMsg{
-  background:gold !important;
-  color:#000;
-  font-weight:bold;
+.me{background:#6ec1ff;align-self:flex-end}
+.other{background:#9cc7e4;align-self:flex-start}
+
+.nameRow{
+  display:flex;
+  justify-content:space-between;
 }
 
-/* שם */
-.name{
-  font-size:11px;
-  opacity:0.7;
-  margin-bottom:3px;
+.dots{cursor:pointer}
+
+.replyBox{
+  background:rgba(255,255,255,0.6);
+  padding:4px;
+  border-radius:6px;
+  margin-bottom:5px;
+  font-size:12px;
 }
 
-/* שורת הודעה */
 .textRow{
   display:flex;
-  align-items:flex-end;
   gap:8px;
-  flex-wrap:wrap;
 }
 
-.text{word-break:break-word}
+.time{font-size:10px}
 
-.time{
-  font-size:10px;
-  opacity:0.7;
-  white-space:nowrap;
+.reactions{
+  display:flex;
+  gap:5px;
+  margin-top:5px;
+  font-size:12px;
+}
+
+.reaction{
+  background:rgba(0,0,0,0.1);
+  padding:2px 6px;
+  border-radius:10px;
 }
 
 /* INPUT */
@@ -132,14 +114,14 @@ html,body{
   border-radius:20px;
 }
 .input button{
-  background:#4da6ff;
-  border:none;
-  color:#fff;
   padding:10px;
+  border:none;
+  background:#4da6ff;
+  color:#fff;
   border-radius:20px;
 }
 
-/* מודאל */
+/* MODAL */
 .modal{
   position:fixed;
   inset:0;
@@ -157,16 +139,12 @@ html,body{
 }
 
 .box{
-  background:#ffffff;
+  background:#fff;
   padding:20px;
-  border-radius:15px;
-  text-align:center;
+  border-radius:12px;
   width:90%;
-  max-width:300px;
-  border:2px solid #4da6ff;
+  max-width:320px;
 }
-
-.box h3{margin-bottom:10px}
 
 .box input{
   width:100%;
@@ -177,261 +155,246 @@ html,body{
 .box button{
   margin-top:10px;
   padding:8px;
-  border:none;
-  border-radius:8px;
-  background:#4da6ff;
-  color:#fff;
+  width:100%;
 }
 
-/* תפריט */
+/* MENU */
 #menu{
   position:fixed;
-  background:#ffffff;
-  padding:10px;
+  background:#fff;
   border-radius:10px;
+  padding:8px;
   display:none;
   z-index:999;
-  border:1px solid #4da6ff;
 }
 .menu-item{
   padding:6px;
   cursor:pointer;
 }
 
-.top-header{
-  width:100%;
-  height:60px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  background:linear-gradient(90deg,#0f2027,#203a43);
-  color:#fff;
-  font-size:18px;
-  font-weight:bold;
-
-  border-bottom:1px solid rgba(255,255,255,0.1);
-  box-shadow:0 2px 10px rgba(0,0,0,0.3);
+/* REACTION PICKER */
+#reactionBox{
+  position:fixed;
+  display:none;
+  background:#fff;
+  padding:10px;
+  border-radius:10px;
 }
-
 </style>
 </head>
 
 <body>
 
-<div class="top-header">
-  💬 צ'אט אונליין
-</div>
-  
+<div class="top-header">💬 צ'אט אונליין</div>
+
 <div class="app">
-
-<div class="header">💬 צ'אט הארי פוטר (זמני)</div>
-
-<div class="adminBar" id="adminBar">
-  <button onclick="openBanned()">📋 רשימת חסומים</button>
-  <button onclick="clearChat()">🧹 נקה צ'אט</button>
-  <button onclick="toggleChat()">⛔חסום צ'אט</button>
-</div>
-
 <div id="chat"></div>
 
 <div class="input">
-  <input id="msg" placeholder="הודעה...">
+  <input id="msg">
   <button onclick="sendMessage()">שלח</button>
 </div>
-
 </div>
 
-<!-- מודאל שם -->
+<!-- USER MODAL -->
 <div class="modal" id="nameModal">
   <div class="box">
-    <h3>הכנס שם</h3>
-    <input id="nameInput">
-    <button onclick="saveName()">אישור</button>
+    <h3>פרטים</h3>
+    <input id="nameInput" placeholder="שם">
+    <input id="phoneInput" placeholder="טלפון (חובה)">
+    <input id="aboutInput" placeholder="עליי (לא חובה)">
+    <button onclick="saveUser()">אישור</button>
   </div>
 </div>
 
-<!-- מודאל מידע -->
+<!-- INFO MODAL -->
 <div class="modal" id="infoModal">
   <div class="box" id="infoText"></div>
 </div>
 
-<!-- רשימת חסומים -->
-<div class="modal" id="bannedModal">
-  <div class="box">
-    <h3>📋 רשימת חסומים</h3>
-    <div id="bannedList"></div>
-    <button onclick="closeModal('bannedModal')">סגור</button>
-  </div>
-</div>
-
-<!-- תפריט -->
-<div id="menu">
-  <div class="menu-item" onclick="deleteMsg()">❌ מחק</div>
-  <div class="menu-item" onclick="banUser()">🚫 חסום</div>
-</div>
+<div id="menu"></div>
+<div id="reactionBox"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, onChildRemoved, onValue, remove, set, get } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, onValue, remove, set, get } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
 
 const app = initializeApp({
-  apiKey:"AIzaSyC1YgGDcl-mv9R7w3ysSrKx8kPf_QuWzEs",
-  databaseURL:"https://harry-potter-chat-default-rtdb.europe-west1.firebasedatabase.app"
+apiKey:"AIzaSyC1YgGDcl-mv9R7w3ysSrKx8kPf_QuWzEs",
+databaseURL:"https://harry-potter-chat-default-rtdb.europe-west1.firebasedatabase.app"
 });
 const db = getDatabase(app);
 
-let name = localStorage.getItem("name");
+let user = JSON.parse(localStorage.getItem("user"));
 let isAdmin=false;
-let selectedKey, selectedUser;
+let selectedKey,selectedUser;
+let replyData=null;
 
-if(!name) nameModal.classList.add("active");
+if(!user) nameModal.classList.add("active");
 
-window.saveName=()=>{
-  const n=nameInput.value.trim();
-  if(!n) return;
-  name=n;
-  localStorage.setItem("name",n);
+window.saveUser=()=>{
+  const name=nameInput.value.trim();
+  const phone=phoneInput.value.trim();
+  const about=aboutInput.value.trim();
+
+  if(!name || !phone) return alert("חובה");
+
+  user={name,phone,about};
+  localStorage.setItem("user",JSON.stringify(user));
   nameModal.classList.remove("active");
 };
 
-/* 🔥 ENTER לשליחה */
 msg.addEventListener("keydown",e=>{
-  if(e.key==="Enter"){
-    e.preventDefault();
-    sendMessage();
-  }
+  if(e.key==="Enter") sendMessage();
 });
 
-function showInfo(t){
-  infoText.innerHTML=t;
-  infoModal.classList.add("active");
-  setTimeout(()=>infoModal.classList.remove("active"),2000);
-}
-
-window.sendMessage=async()=>{
+window.sendMessage=()=>{
   const text=msg.value;
-
-  if(text==="26117"){
-    isAdmin=true;
-    adminBar.style.display="flex";
-    showInfo("👑 מצב מנהל הופעל");
-    msg.value="";
-    return;
-  }
-
-  const banned=await get(ref(db,"banned/"+name));
-  if(banned.exists()){showInfo("🚫 אתה נחסמת על ידי מנהל");return;}
-
-  const blocked=await get(ref(db,"chatBlocked"));
-  if(blocked.exists() && !isAdmin){showInfo("⛔ הצ'אט חסום");return;}
-
   if(!text) return;
 
   push(ref(db,"messages"),{
-    name,
+    ...user,
     text,
-    time:new Date().toLocaleTimeString().slice(0,5),
-    admin:isAdmin
+    time:new Date().toLocaleTimeString(),
+    fullTime:new Date().toISOString(),
+    reply:replyData
   });
 
+  replyData=null;
   msg.value="";
 };
 
-onChildAdded(ref(db,"messages"), d=>{
-  const m=d.val();
-  const key=d.key;
+onChildAdded(ref(db,"messages"),snap=>{
+  const m=snap.val();
+  const key=snap.key;
 
   const div=document.createElement("div");
-  div.className="msg "+(m.name===name?"me":"other")+(m.admin?" adminMsg":"");
+  div.className="msg "+(m.name===user.name?"me":"other");
 
   div.innerHTML=`
-    <div class="name">${m.name}${m.admin?" (מנהל)":""}</div>
-    <div class="textRow">
-      <div class="text">${m.text}</div>
-      <div class="time">${m.time}</div>
-    </div>
+  <div class="nameRow">
+    <span>${m.name}</span>
+    <span class="dots" onclick="openMenu(event,'${key}','${m.name}')">⋮</span>
+  </div>
+
+  ${m.reply ? `<div class="replyBox">${m.reply.name}: ${m.reply.text}</div>`:""}
+
+  <div class="textRow">
+    <div>${m.text}</div>
+    <div class="time">${m.time}</div>
+  </div>
+
+  <div class="reactions" id="react-${key}"></div>
   `;
 
-  div.id=key;
+  let startX=0;
 
-  div.ondblclick=(e)=>{
-    if(!isAdmin)return;
-    openMenu(e, key, m.name);
-  };
+  div.ontouchstart=e=>{
+    startX=e.touches[0].clientX;
 
-  let pressTimer;
-  div.ontouchstart=(e)=>{
-    pressTimer=setTimeout(()=>{
-      if(!isAdmin)return;
-      openMenu(e, key, m.name);
+    setTimeout(()=>{
+      openReactions(key,e);
     },600);
   };
-  div.ontouchend=()=>clearTimeout(pressTimer);
+
+  div.ontouchend=e=>{
+    if(startX - e.changedTouches[0].clientX > 50){
+      replyData={name:m.name,text:m.text,key};
+    }
+  };
 
   chat.appendChild(div);
   chat.scrollTop=chat.scrollHeight;
 });
 
-function openMenu(e,key,user){
+window.openMenu=(e,key,name)=>{
+  e.stopPropagation();
   selectedKey=key;
-  selectedUser=user;
+  selectedUser=name;
 
-  const x=e.touches?e.touches[0].clientX:e.clientX;
-  const y=e.touches?e.touches[0].clientY:e.clientY;
+  let html=`
+  <div class="menu-item" onclick="showDetails()">📄 פרטים</div>
+  <div class="menu-item" onclick="replyMsg()">💬 להגיב</div>
+  `;
 
-  menu.style.left=x+"px";
-  menu.style.top=y+"px";
+  if(name===user.name)
+    html+=`<div class="menu-item" onclick="editMsg()">✏️ עריכה</div>`;
+
+  if(name===user.name || isAdmin)
+    html+=`<div class="menu-item" onclick="deleteMsg()">❌ מחק</div>`;
+
+  if(isAdmin)
+    html+=`<div class="menu-item" onclick="banUser()">🚫 חסום</div>`;
+
+  menu.innerHTML=html;
+  menu.style.left=e.clientX+"px";
+  menu.style.top=e.clientY+"px";
   menu.style.display="block";
-}
+};
 
-onChildRemoved(ref(db,"messages"), d=>{
-  const el=document.getElementById(d.key);
-  if(el) el.remove();
-});
+window.replyMsg=async()=>{
+  const snap=await get(ref(db,"messages/"+selectedKey));
+  const m=snap.val();
+  replyData={name:m.name,text:m.text,key:selectedKey};
+  menu.style.display="none";
+};
+
+window.showDetails=async()=>{
+  const snap=await get(ref(db,"messages/"+selectedKey));
+  const m=snap.val();
+  const d=new Date(m.fullTime);
+
+  infoText.innerHTML=`
+  <h3>פרטים</h3>
+  <p>${m.text}</p>
+  <hr>
+  <p>${d.toLocaleString()}</p>
+  <hr>
+  <p>${m.name}</p>
+  <p>${m.phone}</p>
+  <p>${m.about||""}</p>
+  `;
+  infoModal.classList.add("active");
+};
 
 window.deleteMsg=()=>{
   remove(ref(db,"messages/"+selectedKey));
   menu.style.display="none";
 };
 
-window.banUser=()=>{
-  set(ref(db,"banned/"+selectedUser),true);
-  showInfo("🚫 המשתמש נחסם");
-  menu.style.display="none";
+window.openReactions=(key,e)=>{
+  const emojis=["👍","😂","🔥","❤️","😮"];
+
+  reactionBox.innerHTML=emojis.map(x=>
+    `<span onclick="addReaction('${key}','${x}')">${x}</span>`
+  ).join("");
+
+  reactionBox.style.left=e.touches?e.touches[0].clientX+"px":e.clientX+"px";
+  reactionBox.style.top=e.touches?e.touches[0].clientY+"px":e.clientY+"px";
+  reactionBox.style.display="block";
 };
 
-window.clearChat=()=>{
-  set(ref(db,"messages"),null);
-  showInfo("🧹 נמחק הכל");
+window.addReaction=(key,emoji)=>{
+  const r=ref(db,"reactions/"+key+"/"+emoji);
+  get(r).then(s=>set(r,(s.val()||0)+1));
+  reactionBox.style.display="none";
 };
 
-window.toggleChat=async()=>{
-  const snap=await get(ref(db,"chatBlocked"));
-  if(snap.exists()){
-    set(ref(db,"chatBlocked"),null);
-    showInfo("✅ הצ'אט פתוח");
-  }else{
-    set(ref(db,"chatBlocked"),true);
-    showInfo("⛔ הצ'אט נחסם");
-  }
-};
-
-onValue(ref(db,"banned"), snap=>{
-  let html="";
-  snap.forEach(u=>{
-    html+=`<div>${u.key} <button onclick="unban('${u.key}')">בטל</button></div>`;
+onValue(ref(db,"reactions"),snap=>{
+  snap.forEach(m=>{
+    let html="";
+    m.forEach(e=>{
+      html+=`<span class="reaction">${e.key} ${e.val()}</span>`;
+    });
+    const el=document.getElementById("react-"+m.key);
+    if(el) el.innerHTML=html;
   });
-  bannedList.innerHTML=html || "אין חסומים (בישביל לחסום משתמש לחץ פעמיים על ההודעה שלו)";
 });
 
-window.openBanned=()=> bannedModal.classList.add("active");
-
-window.unban=(u)=> remove(ref(db,"banned/"+u));
-
-window.closeModal=(id)=> document.getElementById(id).classList.remove("active");
-
-window.onclick=()=> menu.style.display="none";
+window.onclick=()=>{
+  menu.style.display="none";
+  reactionBox.style.display="none";
+};
 </script>
 
 </body>
