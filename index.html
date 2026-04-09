@@ -3,17 +3,106 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>צ'אט הארי פוטר</title>
 
 <style>
-/* ❗ לא שיניתי את העיצוב שלך – רק הוספות קטנות */
+*{box-sizing:border-box;margin:0;padding:0}
 
-.replyPreview{
+html,body{
+  height:100%;
+  overflow:hidden;
+  font-family:Arial;
+  background:#3f5f73;
+}
+
+.app{
+  width:95%;
+  max-width:500px;
+  height:calc(100vh - 115px);
+  margin:10px auto;
+  background:#e4f1f9;
+  display:flex;
+  flex-direction:column;
+  border-radius:18px;
+  border:3px solid #4da6ff;
+  overflow:hidden;
+}
+
+.header{
+  padding:12px;
+  text-align:center;
+  background:#6ec1ff;
+  color:#fff;
+}
+
+#chat{
+  flex:1;
+  overflow-y:auto;
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  background:#d9ecf7;
+}
+
+.msg{
+  max-width:75%;
+  padding:10px;
+  margin:5px 0;
+  border-radius:14px;
+}
+
+.me{background:#6ec1ff;align-self:flex-end}
+.other{background:#9cc7e4;align-self:flex-start}
+
+.nameRow{
+  display:flex;
+  justify-content:space-between;
+}
+
+.dots{cursor:pointer}
+
+.replyBox{
   background:rgba(255,255,255,0.6);
-  padding:6px;
+  padding:5px;
   border-radius:8px;
   margin-bottom:5px;
   font-size:12px;
-  cursor:pointer;
+}
+
+.time{font-size:10px}
+
+.input{
+  display:flex;
+  padding:10px;
+  background:#cfe8f7;
+}
+.input input{flex:1;padding:10px;border-radius:20px;border:none}
+.input button{padding:10px;border:none;background:#4da6ff;color:#fff;border-radius:20px}
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.box{
+  background:#fff;
+  padding:20px;
+  border-radius:12px;
+  width:90%;
+  max-width:300px;
+}
+
+#menu{
+  position:fixed;
+  background:#fff;
+  padding:10px;
+  border-radius:10px;
+  display:none;
+  z-index:999;
 }
 
 .reactions{
@@ -21,236 +110,160 @@
   gap:5px;
   margin-top:5px;
 }
-
 .reaction{
-  background:rgba(0,0,0,0.15);
+  background:rgba(0,0,0,0.1);
   padding:2px 6px;
   border-radius:10px;
   font-size:11px;
-}
-
-.editBox{
-  display:flex;
-  gap:5px;
-}
-
-.editBox input{
-  flex:1;
-}
-
-.detailsBox{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-
-.detailsTop,.detailsBottom{
-  background:rgba(255,255,255,0.7);
-  padding:10px;
-  border-radius:10px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- ❗ כל הHTML שלך נשאר אותו דבר -->
+<div class="app">
+<div class="header">💬 צ'אט הארי פוטר</div>
+
+<div id="chat"></div>
+
+<div class="input">
+  <input id="msg">
+  <button onclick="sendMessage()">שלח</button>
+</div>
+</div>
+
+<div class="modal" id="nameModal">
+  <div class="box">
+    <input id="nameInput" placeholder="שם">
+    <input id="phoneInput" placeholder="טלפון חובה">
+    <input id="aboutInput" placeholder="עליי">
+    <button onclick="saveUser()">אישור</button>
+  </div>
+</div>
+
+<div class="modal" id="infoModal" style="display:none">
+  <div class="box" id="infoText"></div>
+</div>
+
+<div id="menu"></div>
 
 <script type="module">
-/* ❗ משתמש */
-let userData = JSON.parse(localStorage.getItem("userData"));
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getDatabase, ref, push, onChildAdded, onValue, remove, set, get } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyC1YgGDcl-mv9R7w3ysSrKx8kPf_QuWzEs",
+  databaseURL:"https://harry-potter-chat-default-rtdb.europe-west1.firebasedatabase.app"
+});
+const db = getDatabase(app);
+
+let user = JSON.parse(localStorage.getItem("user"));
+let selectedKey;
 let replyData=null;
 
-/* ===== מודאל משתמש ===== */
-window.saveName=()=>{
-  const nameVal=nameInput.value.trim();
-  const phoneVal=phoneInput.value.trim();
-  const aboutVal=aboutInput.value.trim();
+if(!user) nameModal.style.display="flex";
 
-  if(!nameVal || !phoneVal){
-    showInfo("❗ שם וטלפון חובה");
-    return;
-  }
+window.saveUser=()=>{
+  const name=nameInput.value.trim();
+  const phone=phoneInput.value.trim();
+  const about=aboutInput.value.trim();
 
-  userData={name:nameVal,phone:phoneVal,about:aboutVal};
-  localStorage.setItem("userData",JSON.stringify(userData));
-  name=nameVal;
+  if(!name || !phone) return alert("חובה");
 
-  nameModal.classList.remove("active");
+  user={name,phone,about};
+  localStorage.setItem("user",JSON.stringify(user));
+  nameModal.style.display="none";
 };
 
-/* ===== שליחה ===== */
-window.sendMessage=async()=>{
+window.sendMessage=()=>{
   const text=msg.value;
   if(!text)return;
 
   push(ref(db,"messages"),{
-    ...userData,
+    ...user,
     text,
-    edited:false,
-    time:new Date().toLocaleTimeString().slice(0,5),
+    time:new Date().toLocaleTimeString(),
     fullTime:new Date().toISOString(),
     reply:replyData,
-    admin:isAdmin
+    edited:false
   });
 
-  replyData=null;
-  replyPreview.innerHTML="";
   msg.value="";
+  replyData=null;
 };
 
-/* ===== הצגת הודעה ===== */
-onChildAdded(ref(db,"messages"), d=>{
-  const m=d.val();
-  const key=d.key;
+onChildAdded(ref(db,"messages"),snap=>{
+  const m=snap.val();
+  const key=snap.key;
 
   const div=document.createElement("div");
-  div.className="msg "+(m.name===name?"me":"other")+(m.admin?" adminMsg":"");
+  div.className="msg "+(m.name===user.name?"me":"other");
 
   div.innerHTML=`
   <div class="nameRow">
-    <span class="name">${m.name}${m.admin?" (מנהל)":""}</span>
-    <span class="dots" onclick="openMsgMenu(event,'${key}','${m.name}')">⋮</span>
+    <span>${m.name}</span>
+    <span class="dots" onclick="openMenu(event,'${key}')">⋮</span>
   </div>
 
-  ${m.reply ? `<div class="replyPreview" onclick="scrollToMsg('${m.reply.key}')">
-    ${m.reply.name}: ${m.reply.text}
-  </div>`:""}
+  ${m.reply ? `<div class="replyBox">${m.reply.name}: ${m.reply.text}</div>`:""}
 
-  <div class="textRow" id="text-${key}">
-    <div class="text">${m.text}</div>
+  <div id="text-${key}">
+    ${m.text}
     <div class="time">${m.time}${m.edited?" (ערוך)":""}</div>
   </div>
 
   <div class="reactions" id="react-${key}"></div>
   `;
 
-  /* ===== SWIPE ===== */
-  let startX=0;
-  div.ontouchstart=e=>{
-    startX=e.touches[0].clientX;
-
-    setTimeout(()=>{
-      openReactions(key,e);
-    },600);
-  };
-
-  div.ontouchend=e=>{
-    if(startX - e.changedTouches[0].clientX > 50){
-      replyTo(key);
-    }
-  };
-
   chat.appendChild(div);
 });
 
-/* ===== תפריט ===== */
-window.openMsgMenu=(e,key,user)=>{
+window.openMenu=(e,key)=>{
   selectedKey=key;
-  selectedUser=user;
 
-  let html=`<div onclick="showDetails()">📄 פרטים</div>`;
-  html+=`<div onclick="replyTo('${key}')">💬 להגיב</div>`;
+  menu.innerHTML=`
+  <div onclick="details()">📄 פרטים</div>
+  <div onclick="reply()">💬 להגיב</div>
+  <div onclick="edit()">✏️ עריכה</div>
+  <div onclick="del()">❌ מחק</div>
+  `;
 
-  if(user===name)
-    html+=`<div onclick="editMsg()">✏️ עריכה</div>`;
-
-  if(user===name || isAdmin)
-    html+=`<div onclick="deleteMsg()">❌ מחק</div>`;
-
-  if(isAdmin)
-    html+=`<div onclick="banUser()">🚫 חסום</div>`;
-
-  menu.innerHTML=html;
   menu.style.display="block";
 };
 
-/* ===== פרטים ===== */
-window.showDetails=async()=>{
+window.details=async()=>{
   const m=(await get(ref(db,"messages/"+selectedKey))).val();
-  const d=new Date(m.fullTime);
-
-  infoText.innerHTML=`
-  <div class="detailsBox">
-    <div class="detailsTop">
-      <b>${m.text}</b><br>
-      🕒 ${d.toLocaleString()}
-    </div>
-
-    <div class="detailsBottom">
-      👤 ${m.name}<br>
-      📞 ${m.phone}<br>
-      ${m.about || ""}
-    </div>
-  </div>
-  `;
-
-  infoModal.classList.add("active");
+  infoText.innerHTML=`${m.text}<br>${m.name}<br>${m.phone}`;
+  infoModal.style.display="flex";
 };
 
-/* ===== עריכה ===== */
-window.editMsg=async()=>{
+window.del=()=> remove(ref(db,"messages/"+selectedKey));
+
+window.edit=async()=>{
   const el=document.getElementById("text-"+selectedKey);
   const m=(await get(ref(db,"messages/"+selectedKey))).val();
 
   el.innerHTML=`
-    <div class="editBox">
-      <input id="editInput" value="${m.text}">
-      <button onclick="saveEdit('${selectedKey}')">✔</button>
-    </div>
+  <input id="editInput" value="${m.text}">
+  <button onclick="saveEdit('${selectedKey}')">✔</button>
   `;
 };
 
-window.saveEdit=(key)=>{
-  const val=editInput.value;
-
-  set(ref(db,"messages/"+key+"/text"),val);
-  set(ref(db,"messages/"+key+"/edited"),true);
+window.saveEdit=(k)=>{
+  set(ref(db,"messages/"+k+"/text"),editInput.value);
+  set(ref(db,"messages/"+k+"/edited"),true);
 };
 
-/* ===== מחיקה ===== */
-window.deleteMsg=()=>{
-  remove(ref(db,"messages/"+selectedKey));
+window.reply=async()=>{
+  const m=(await get(ref(db,"messages/"+selectedKey))).val();
+  replyData={name:m.name,text:m.text};
 };
 
-/* ===== תגובה ===== */
-window.replyTo=async(key)=>{
-  const m=(await get(ref(db,"messages/"+key))).val();
-
-  replyData={
-    key,
-    name:m.name,
-    text:m.text
-  };
-
-  replyPreview.innerHTML=`💬 ${m.name}: ${m.text}`;
-};
-
-/* ===== ריאקציות ===== */
-window.openReactions=(key,e)=>{
-  const emojis=["👍","😂","🔥","❤️","😮"];
-
-  reactionBox.innerHTML=emojis.map(em=>
-    `<span onclick="react('${key}','${em}')">${em}</span>`
-  ).join("");
-
-  reactionBox.style.display="block";
-};
-
-window.react=async(key,emoji)=>{
-  const rRef=ref(db,"reactions/"+key+"/"+userData.name);
-
-  set(rRef,emoji);
-};
-
-/* ===== הצגה ===== */
 onValue(ref(db,"reactions"),snap=>{
   snap.forEach(m=>{
     let map={};
-
     m.forEach(u=>{
-      const em=u.val();
-      map[em]=(map[em]||0)+1;
+      map[u.val()]=(map[u.val()]||0)+1;
     });
 
     let html="";
