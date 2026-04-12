@@ -1,247 +1,714 @@
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>צ'אט הארי פוטר</title>
-
 <style>
-/* כל ה-CSS שלך + התוספות מהשלב הקודם (לא נוגע בזה שוב כדי לא להעמיס כאן) */
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+html, body {  height: 100%; background: #3f5f73;}
+
+/* אפליקציה */
+.app {  width: 95%; max-width: 500px; height: calc(100vh - 80px);  margin: 10px auto; background: #e4f1f9; display: flex;  flex-direction: column; border-radius: 18px; border: 3px solid #4da6ff;  box-shadow: 0 0 25px rgba(0,0,0,0.3); overflow: hidden;}
+.top-header {  width: 100%; height: 50px; display: flex; align-items: center; justify-content: center;  background: linear-gradient(90deg, #0f2027, #203a43); color: #fff;  font-size: 18px; font-weight: bold; box-shadow: 0 2px 10px rgba(0,0,0,0.3);}
+.header { padding: 12px; text-align: center; background: #6ec1ff; font-weight: bold; color: #fff; }
+
+/* סרגל מנהל */
+.adminBar { display: none; gap: 6px; padding: 6px; justify-content: center; background: #cfe8f7; flex-wrap: wrap; }
+.adminBar button { background: #4da6ff; border: none; color: #fff; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+
+/* אזור הצ'אט */
+#chat {   flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;   padding: 10px; display: flex; flex-direction: column; background: #d9ecf7; }
+
+/* הודעות */
+.msg {  max-width: 80%; padding: 10px; margin: 5px 0; border-radius: 14px; position: relative;  display: flex; flex-direction: column; transition: transform 0.2s ease;  -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;  -webkit-touch-callout: none;}
+.me { background: #6ec1ff; align-self: flex-end; }
+.other { background: #9cc7e4; align-self: flex-start; }
+.adminMsg { background: gold !important; color: #000; font-weight: bold; }
+.deleted-text { font-style: italic; opacity: 0.6; color: #444; }
+.highlightMsg { box-shadow: 0 0 15px #4da6ff; transform: scale(1.02); transition: 0.3s; }
+
+.nameRow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.name { font-size: 11px; opacity: 0.7; font-weight: bold; }
+.dots { cursor: pointer; margin-right: 10px; font-size: 16px; padding: 0 5px; }
+
+/* תגובות */
+.replyBox {  background: rgba(255,255,255,0.8); border-radius: 10px; padding: 6px 10px; margin-bottom: 5px;  position: relative; font-size: 12px; cursor: pointer; border-right: 4px solid #4da6ff;  transition: background 0.2s;}
+.replyBox:hover { background: rgba(255,255,255,0.95); }
+.replyClose { position: absolute; left: 5px; top: 2px; cursor: pointer; font-weight: bold; color: #ff4d4d; }
+.textRow { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.text { word-break: break-word; flex: 1; line-height: 1.4; }
+.time { font-size: 10px; opacity: 0.7; white-space: nowrap; }
+
+/* ריאקציות */
+.reactions-container { margin-top: 6px; display: flex; gap: 5px; flex-wrap: wrap; }
+.reaction { background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 12px; font-size: 12px; cursor: pointer; border: 1px solid #cce5ff; }
+
+/* אזור הקלדה */
+.input { display: flex; padding: 10px; background: #cfe8f7; gap: 5px; align-items: center; }
+.input input { flex: 1; padding: 12px; border: none; border-radius: 20px; outline: none; font-size: 14px; }
+.input button { background: #4da6ff; border: none; color: #fff; padding: 12px 18px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+
+#mentionBtn {  position: absolute; top: -10px; left: -10px; background: #ff4d4d; color: #fff; font-size: 12px;  width: 22px; height: 22px; border-radius: 50%; display: none; align-items: center; justify-content: center;  cursor: pointer; font-weight: bold; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.3);}
+
+/* מודאלים כלליים */
+.modal {  position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex;  justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 1000;}
+.modal.active { opacity: 1; pointer-events: auto; }
+.box { background: #ffffff; padding: 20px; border-radius: 15px; text-align: center; width: 90%; max-width: 320px; border: 2px solid #4da6ff; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+.box h3 { margin-bottom: 15px; color: #333; }
+.box input { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; outline: none; }
+.box button { width: 100%; padding: 10px; border: none; border-radius: 8px; background: #4da6ff; color: #fff; font-size: 16px; cursor: pointer; }
+
+/* מודאל הודעות צף תמיד מעל הכל */
+#infoModal { z-index: 9999 !important; }
+
+/* מודאל ריאקציות (צף) */
+.reaction-modal-box { background: transparent; width: 90%; max-width: 320px; display: flex; flex-direction: column; gap: 15px; }
+#activeReactionsBar {  background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 15px; display: flex; gap: 10px; flex-wrap: wrap;   justify-content: center; min-height: 60px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);}
+.active-react { background: #f0f8ff; border: 1px solid #ccc; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 15px; display: flex; gap: 5px; align-items: center; }
+.my-react { background: #d4edda; border-color: #c3e6cb; } 
+#emojiGrid {  background: #fff; padding: 20px; border-radius: 15px; display: grid; grid-template-columns: repeat(5, 1fr);   gap: 15px; font-size: 28px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);}
+#emojiGrid span { cursor: pointer; transition: transform 0.1s; user-select: none; }
+#emojiGrid span:active { transform: scale(1.2); }
+
+/* תפריט הודעה (⋮) */
+#menu {  position: fixed; background: #ffffff; padding: 8px 0; border-radius: 10px;  display: none; z-index: 1001; border: 1px solid #4da6ff; box-shadow: 0 4px 15px rgba(0,0,0,0.2); min-width: 150px;}
+.menu-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; color: #333; }
+.menu-item:last-child { border-bottom: none; }
+.menu-item:hover { background: #f0f8ff; }
+
+/* פרטים */
+.detailsBox { background: #aee1f9; width: 90%; max-width: 350px; padding: 20px; border-radius: 15px; text-align: right; }
+.detailsSection { background: rgba(255,255,255,0.9); padding: 15px; border-radius: 10px; margin-bottom: 10px; font-size: 14px; line-height: 1.5; }
+.detailsTitle { font-weight: bold; margin-bottom: 8px; color: #0056b3; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
 </style>
 </head>
-
 <body>
 
-<div class="top-header">
-  💬 צ'אט אונליין
-</div>
-  
-<div class="app">
-
-<div class="header">💬 צ'אט הארי פוטר</div>
-
-<div class="adminBar" id="adminBar">
-  <button onclick="openBanned()">📋 רשימת חסומים</button>
-  <button onclick="clearChat()">🧹 נקה צ'אט</button>
-  <button onclick="toggleChat()">⛔חסום צ'אט</button>
-</div>
-
-<div id="chat"></div>
-
-<div class="input">
-  <input id="msg" placeholder="הודעה...">
-  <button onclick="sendMessage()">שלח</button>
-</div>
-
-<!-- 🔥 חדש -->
-<div id="replyPreview"></div>
-<div id="reactionBox"></div>
-
-</div>
-
-<!-- מודאל שם -->
-<div class="modal" id="nameModal">
-  <div class="box">
-    <h3>הכנס שם</h3>
-    <input id="nameInput">
-    <button onclick="saveName()">אישור</button>
+<div class="top-header">💬 צ'אט אונליין</div>  
+<div class="app">  
+  <div class="header">💬 צ'אט הארי פוטר</div>
+  <div class="adminBar" id="adminBar">    
+    <button onclick="window.openUsers()">👥 משתמשים</button>    
+    <button onclick="window.openBanned()">📋 חסומים</button>    
+    <button onclick="window.clearChat()">🧹 נקה הכל</button>    
+    <button onclick="window.toggleChat()">⛔ חסימת צ'אט</button>  
+  </div>
+  <div id="chat"></div>
+  <div id="replyPreview" style="padding: 0 10px;"></div>
+  <div class="input">    
+    <input id="msg" placeholder="הקלידו הודעה..." autocomplete="off">    
+    <div style="position:relative; display:flex;">      
+      <button onclick="window.sendMessage()">שלח</button>      
+      <div id="mentionBtn" onclick="window.goToNextMention()">@</div>    
+    </div>  
   </div>
 </div>
 
-<!-- מודאל מידע -->
-<div class="modal" id="infoModal">
-  <div class="box" id="infoText"></div>
-</div>
-
-<!-- רשימת חסומים -->
-<div class="modal" id="bannedModal">
-  <div class="box">
-    <h3>📋 רשימת חסומים</h3>
-    <div id="bannedList"></div>
-    <button onclick="closeModal('bannedModal')">סגור</button>
+<div class="modal" id="nameModal">  
+  <div class="box">    
+    <h3>הזנת פרטים</h3>    
+    <input id="nameInput" placeholder="שם מלא (חובה)">    
+    <input id="phoneInput" placeholder="טלפון (חובה)">    
+    <input id="aboutInput" placeholder="ספר קצת עליך (אופציונלי)">    
+    <button onclick="window.saveName()">היכנס לצ'אט</button>  
   </div>
 </div>
 
-<!-- תפריט -->
-<div id="menu">
-  <div class="menu-item" onclick="deleteMsg()">❌ מחק</div>
-  <div class="menu-item" onclick="banUser()">🚫 חסום</div>
+<div class="modal" id="infoModal"><div class="box" id="infoText" style="font-weight:bold;"></div></div>
+
+<div class="modal" id="bannedModal">  
+  <div class="box">    
+    <h3>📋 משתמשים חסומים</h3>    
+    <div id="bannedList" style="margin-bottom:15px; max-height:150px; overflow-y:auto;"></div>    
+    <button onclick="window.closeModal('bannedModal')">סגור</button>  
+  </div>
+</div>
+
+<div class="modal" id="usersModal">  
+  <div class="box">    
+    <h3>👥 רשימת משתמשים</h3>    
+    <div id="usersList" style="margin-bottom:15px; max-height:200px; overflow-y:auto; text-align:right;"></div>    
+    <button onclick="window.closeModal('usersModal')">סגור</button>  
+  </div>
+</div>
+
+<div class="modal" id="adminPassModal">  
+  <div class="box">    
+    <h3>🔐 הזן סיסמת מנהל ראשי</h3>    
+    <input id="adminPassInput" type="password" placeholder="סיסמה">    
+    <button onclick="window.confirmDeleteUser()">אישור</button>    
+    <button onclick="window.closeModal('adminPassModal')" style="margin-top:10px; background:#e0e0e0; color:#333;">ביטול</button>  
+  </div>
+</div>
+
+<div class="modal" id="detailsModal" onclick="window.closeModalOnBg(event, 'detailsModal')">  
+  <div class="detailsBox" id="detailsContent" onclick="event.stopPropagation()"></div>
+</div>
+
+<div class="modal" id="reactionModal" onclick="window.closeModalOnBg(event, 'reactionModal')">  
+  <div class="reaction-modal-box" onclick="event.stopPropagation()">    
+    <div id="activeReactionsBar"></div>    
+    <div id="emojiGrid">      
+      <span onclick="window.toggleReact('👍')">👍</span>      
+      <span onclick="window.toggleReact('😂')">😂</span>      
+      <span onclick="window.toggleReact('❤️')">❤️</span>      
+      <span onclick="window.toggleReact('🔥')">🔥</span>      
+      <span onclick="window.toggleReact('😮')">😮</span>      
+      <span onclick="window.toggleReact('😢')">😢</span>      
+      <span onclick="window.toggleReact('🙏')">🙏</span>      
+      <span onclick="window.toggleReact('🎉')">🎉</span>      
+      <span onclick="window.toggleReact('😡')">😡</span>      
+      <span onclick="window.toggleReact('✨')">✨</span>    
+    </div>  
+  </div>
+</div>
+
+<div class="modal" id="reactionsDetailsModal" onclick="window.closeModalOnBg(event, 'reactionsDetailsModal')">  
+  <div class="reaction-modal-box" onclick="event.stopPropagation()">    
+    <div id="topReactionsBar" style="background: rgba(255,255,255,0.9); padding: 12px; border-radius: 15px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center; font-size:16px;"></div>    
+    <div id="reactionsUsersList" style="background:#fff; border-radius:15px; padding:15px; max-height:300px; overflow-y:auto; text-align:right; font-size:14px;"></div>  
+  </div>
+</div>
+
+<div id="menu">  
+  <div class="menu-item" onclick="window.replyToMsg()">💬 הגב</div>  
+  <div class="menu-item" onclick="window.copyMsg()">📄 העתק הודעה</div>  
+  <div class="menu-item" onclick="window.showDetails()">📋 פרטים</div>    
+  <div id="editOption" class="menu-item" style="display:none;" onclick="window.editMsg()">✏️ עריכה</div>  
+  <div id="deleteOption" class="menu-item" style="display:none;" onclick="window.softDeleteMsg()">🗑️ מחיקה</div>  
+  <div id="restoreOption" class="menu-item" style="display:none;" onclick="window.restoreMsg()">♻️ שחזר הודעה</div>    
+  <div id="adminOptions" style="display:none; border-top:2px solid #ccc; margin-top:5px; padding-top:5px;">    
+    <div id="hardDeleteBtn" class="menu-item" style="color:red; display:none;" onclick="window.hardDeleteMsg()">❌ מחק לצמיתות</div>    
+    <div id="viewHiddenBtn" class="menu-item" style="display:none;" onclick="window.viewDeletedMsg()">👁️ הצג תוכן מוסתר</div>    
+    <div class="menu-item" onclick="window.banUser()">🚫 חסום משתמש</div>  
+  </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, onChildRemoved, onValue, remove, set, get } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, onChildRemoved, onValue, remove, set, get, onChildChanged } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
 
-const app = initializeApp({
-  apiKey:"AIzaSyC1YgGDcl-mv9R7w3ysSrKx8kPf_QuWzEs",
-  databaseURL:"https://harry-potter-chat-default-rtdb.europe-west1.firebasedatabase.app"
+const app = initializeApp({  
+  apiKey: "AIzaSyC1YgGDcl-mv9R7w3ysSrKx8kPf_QuWzEs",  
+  databaseURL: "https://harry-potter-chat-default-rtdb.europe-west1.firebasedatabase.app"
 });
 const db = getDatabase(app);
 
-/* ===== משתנים קיימים ===== */
-let name = localStorage.getItem("name");
-let isAdmin=false;
-let selectedKey, selectedUser;
-
-/* ===== 🔥 משתנים חדשים ===== */
-let userData = {
-  name: localStorage.getItem("name"),
-  phone: localStorage.getItem("phone") || "",
-  about: localStorage.getItem("about") || ""
-};
-
+let userData = JSON.parse(localStorage.getItem("userData")) || {};
+let name = userData.name;
+let isAdmin = false;
+let selectedKey = null, selectedUser = null;
 let replyData = null;
+let unreadReplies = [];
+let currentReactionKey = null;
 
-/* ======================= */
+const replySound = new Audio("https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3");
 
-if(!name) nameModal.classList.add("active");
-
-window.saveName=()=>{
-  const n=nameInput.value.trim();
-  if(!n) return;
-  name=n;
-  localStorage.setItem("name",n);
-  nameModal.classList.remove("active");
-};
-
-/* ENTER לשליחה */
-msg.addEventListener("keydown",e=>{
-  if(e.key==="Enter"){
-    e.preventDefault();
-    sendMessage();
+let soundEnabled = false;
+document.body.addEventListener("click", () => {  
+  if(!soundEnabled){    
+    replySound.play().catch(()=>{});    
+    replySound.pause();    
+    replySound.currentTime = 0;    
+    soundEnabled = true;  
   }
-});
+}, { once: true });
 
-function showInfo(t){
-  infoText.innerHTML=t;
-  infoModal.classList.add("active");
-  setTimeout(()=>infoModal.classList.remove("active"),2000);
+const msgInput = document.getElementById("msg");
+const chatDiv = document.getElementById("chat");
+const replyPreview = document.getElementById("replyPreview");
+
+// פונקציה להאזנה למחיקת המשתמש ממסד הנתונים וניקוי הלוקאל סטורג'
+function listenForDeletion() {
+  if(!name) return;
+  onValue(ref(db, "deletedUsers/" + name), (snap) => {
+    if(snap.exists()){
+      localStorage.removeItem("userData");
+      remove(ref(db, "deletedUsers/" + name)); // מנקה את הטריגר ממסד הנתונים
+      window.location.reload(); // מרענן את הדף למצב התחלתי לחלוטין
+    }
+  });
 }
 
-window.sendMessage=async()=>{
-  const text=msg.value;
+if(!name) {
+  document.getElementById("nameModal").classList.add("active");
+} else {
+  listenForDeletion();
+}
 
-  if(text==="26117"){
-    isAdmin=true;
-    adminBar.style.display="flex";
-    showInfo("👑 מצב מנהל הופעל");
-    msg.value="";
-    return;
-  }
-
-  const banned=await get(ref(db,"banned/"+name));
-  if(banned.exists()){showInfo("🚫 אתה נחסמת על ידי מנהל");return;}
-
-  const blocked=await get(ref(db,"chatBlocked"));
-  if(blocked.exists() && !isAdmin){showInfo("⛔ הצ'אט חסום");return;}
-
-  if(!text) return;
-
-  push(ref(db,"messages"),{
-    name,
-    text,
-    time:new Date().toLocaleTimeString().slice(0,5),
-    admin:isAdmin
-  });
-
-  msg.value="";
+window.escapeHTML = (str) => {  
+  if (!str) return "";  
+  return str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
 };
 
-onChildAdded(ref(db,"messages"), d=>{
-  const m=d.val();
-  const key=d.key;
+window.closeModalOnBg = (e, id) => { if(e.target.id === id) document.getElementById(id).classList.remove("active"); };
+window.closeModal = (id) => document.getElementById(id).classList.remove("active");
 
-  const div=document.createElement("div");
-  div.className="msg "+(m.name===name?"me":"other")+(m.admin?" adminMsg":"");
+window.showInfo = (text) => {  
+  document.getElementById("infoText").innerHTML = text;  
+  document.getElementById("infoModal").classList.add("active");  
+  setTimeout(() => document.getElementById("infoModal").classList.remove("active"), 2500);
+};
 
-  div.innerHTML=`
-    <div class="name">${m.name}${m.admin?" (מנהל)":""}</div>
-    <div class="textRow">
-      <div class="text">${m.text}</div>
-      <div class="time">${m.time}</div>
-    </div>
+window.saveName = () => {  
+  const n = document.getElementById("nameInput").value.trim();  
+  const p = document.getElementById("phoneInput").value.trim();  
+  const a = document.getElementById("aboutInput").value.trim();  
+  if(!n || !p){ window.showInfo("❗ חובה למלא שם וטלפון"); return; }  
+  name = n;  
+  localStorage.setItem("userData", JSON.stringify({name: n, phone: p, about: a}));  
+  document.getElementById("nameModal").classList.remove("active");  
+  userData = JSON.parse(localStorage.getItem("userData"));
+  listenForDeletion(); // מפעיל האזנה למחיקה למשתמש החדש
+};
+
+msgInput.addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); window.sendMessage(); } });
+
+function updateMentionIndicator() {   
+  document.getElementById("mentionBtn").style.display = unreadReplies.length ? "flex" : "none"; 
+}
+
+window.goToNextMention = () => {   
+  if(!unreadReplies.length) return;   
+  window.goToMessage(unreadReplies.shift());   
+  updateMentionIndicator(); 
+};
+
+window.goToMessage = (id) => {  
+  const el = document.getElementById(id); if(!el) return;  
+  el.scrollIntoView({behavior: "smooth", block: "center"});  
+  el.classList.add("highlightMsg"); setTimeout(() => el.classList.remove("highlightMsg"), 2000);
+};
+
+window.goToMessageSafe = async (id) => {  
+  const snap = await get(ref(db, "messages/" + id));  
+  if(!snap.exists()){    
+    window.showInfo("⚠️ ההודעה כבר לא קיימת");    
+    return;  
+  }  
+  window.goToMessage(id);
+};
+
+let sending = false;
+window.sendMessage = async () => {  
+  if(sending) return;  
+  sending = true;
+
+  try {    
+    const text = msgInput.value;    
+    if(text === "26117"){ isAdmin = true; document.getElementById("adminBar").style.display = "flex"; window.showInfo("👑 מצב מנהל הופעל"); msgInput.value = ""; return; }        
+    const banned = await get(ref(db, "banned/" + name));    
+    if(banned.exists()){ window.showInfo("🚫 נחסמת מהצ'אט"); return; }        
+    const blocked = await get(ref(db, "chatBlocked"));    
+    if(blocked.exists() && !isAdmin){ window.showInfo("⛔ הצ'אט סגור כרגע"); return; }        
+    if(!text.trim()) return;
+
+    if(replyData){      
+      const snap = await get(ref(db,"messages/"+replyData.id));      
+      if(!snap.exists() || snap.val().deleted){        
+        window.showInfo("❗ לא ניתן להגיב להודעה שנמחקה");        
+        replyData = null;        
+        replyPreview.innerHTML = "";        
+        return;      
+      }    
+    }
+
+    await push(ref(db, "messages"), {      
+      name, text, time: new Date().toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'}),      
+      admin: isAdmin, phone: userData.phone || "", about: userData.about || "", timestamp: Date.now(), reply: replyData     
+    });        
+    
+    msgInput.value = "";     
+    window.cancelReply();    
+    msgInput.focus();  
+  } finally {    
+    sending = false;  
+  }
+};
+
+function renderMsgHTML(m, key) {  
+  let textContent = m.text; let timeText = m.time; let textClass = "text";  
+  if(m.deleted){    
+    textContent = "🚫 הודעה זו נמחקה"; textClass += " deleted-text";    
+    if(m.restored) timeText += " (שוחזר)";  
+  }  
+  return `    
+    <div class="nameRow">      
+      <span class="name">${window.escapeHTML(m.name)}${m.admin ? " 👑" : ""}</span>      
+      <span class="dots" onclick="window.openMenu(event, '${key}', '${m.name.replace(/'/g, "\\'")}')">⋮</span>    
+    </div>    
+    ${m.reply ? `      
+      <div class="replyBox" onclick="window.goToMessageSafe('${m.reply.id}')">        
+        <b>${window.escapeHTML(m.reply.name)}</b><br>        
+        ${window.escapeHTML(m.reply.text.length > 50 ? m.reply.text.slice(0,50) + "..." : m.reply.text)}      
+      </div>    
+    ` : ""}    
+    <div class="textRow">      
+      <div class="${textClass}">${m.deleted ? textContent : window.escapeHTML(textContent)}</div>      
+      <div class="time">${timeText}${m.edited && !m.deleted ? " (נערכה)" : ""}</div>    
+    </div>    
+    <div class="reactions-container" id="react-container-${key}"></div>  
   `;
-
-  div.id=key;
-
-  div.ondblclick=(e)=>{
-    if(!isAdmin)return;
-    openMenu(e, key, m.name);
-  };
-
-  let pressTimer;
-  div.ontouchstart=(e)=>{
-    pressTimer=setTimeout(()=>{
-      if(!isAdmin)return;
-      openMenu(e, key, m.name);
-    },600);
-  };
-  div.ontouchend=()=>clearTimeout(pressTimer);
-
-  chat.appendChild(div);
-  chat.scrollTop=chat.scrollHeight;
-});
-
-function openMenu(e,key,user){
-  selectedKey=key;
-  selectedUser=user;
-
-  const x=e.touches?e.touches[0].clientX:e.clientX;
-  const y=e.touches?e.touches[0].clientY:e.clientY;
-
-  menu.style.left=x+"px";
-  menu.style.top=y+"px";
-  menu.style.display="block";
 }
 
-onChildRemoved(ref(db,"messages"), d=>{
-  const el=document.getElementById(d.key);
-  if(el) el.remove();
+onChildAdded(ref(db, "messages"), d => {  
+  const m = d.val(); const key = d.key;  
+  const div = document.createElement("div");  
+  div.className = "msg " + (m.name === name ? "me" : "other") + (m.admin ? " adminMsg" : "");   
+  div.id = key;  
+  div.oncontextmenu = (e) => { e.preventDefault(); return false; };
+
+  const contentDiv = document.createElement("div");  
+  contentDiv.className = "msg-content";   
+  contentDiv.innerHTML = renderMsgHTML(m, key);  
+  div.appendChild(contentDiv);
+
+  if(m.reply && m.reply.name === name && m.name !== name){    
+    replySound.play().catch(()=>{});    
+    unreadReplies.push(key); updateMentionIndicator();  
+  }
+
+  let pressTimer;  let isDragging = false;
+
+  const startPress = () => {    
+    isDragging = false;    
+    pressTimer = setTimeout(async () => {      
+      const snap = await get(ref(db, "messages/" + key));      
+      if(!snap.exists() || snap.val().deleted) return;      
+      window.openReactionModal(key);    
+    }, 500);  
+  };  
+  
+  const cancelPress = () => clearTimeout(pressTimer);  
+  const touchMove = () => { isDragging = true; clearTimeout(pressTimer); };
+
+  div.addEventListener("touchstart", startPress, { passive: true });  
+  div.addEventListener("touchmove", touchMove, { passive: true });  
+  div.addEventListener("touchend", () => clearTimeout(pressTimer));    
+  div.addEventListener("mousedown", (e) => { if(e.button === 0) startPress(); });  
+  div.addEventListener("mousemove", touchMove);  
+  div.addEventListener("mouseup", cancelPress);  
+  div.addEventListener("mouseleave", cancelPress);
+
+  let startX = 0;  
+  div.addEventListener("touchstart", e => { startX = e.touches[0].clientX; }, { passive: true });  
+  div.addEventListener("touchend", e => {    
+    if(isDragging) return;    
+    let endX = e.changedTouches[0].clientX;    
+    if(endX - startX > 60){ selectedKey = key; window.replyToMsg(); div.style.transform = "translateX(40px)"; setTimeout(() => div.style.transform = "translateX(0)", 150); }  
+  });
+
+  chatDiv.appendChild(div);   
+  chatDiv.scrollTop = chatDiv.scrollHeight;
 });
 
-window.deleteMsg=()=>{
-  remove(ref(db,"messages/"+selectedKey));
-  menu.style.display="none";
+onChildChanged(ref(db, "messages"), d => {  
+  const el = document.getElementById(d.key); if(!el) return;  
+  const contentDiv = el.querySelector(".msg-content");  
+  if(contentDiv) contentDiv.innerHTML = renderMsgHTML(d.val(), d.key);
+});
+
+onChildRemoved(ref(db, "messages"), d => {   
+  const el = document.getElementById(d.key); if(el) el.remove(); 
+});
+
+window.openReactionModal = async (key) => {  
+  currentReactionKey = key;  
+  await window.renderActiveReactions();   
+  document.getElementById("reactionModal").classList.add("active");
 };
 
-window.banUser=()=>{
-  set(ref(db,"banned/"+selectedUser),true);
-  showInfo("🚫 המשתמש נחסם");
-  menu.style.display="none";
+window.renderActiveReactions = async () => {  
+  if(!currentReactionKey) return;  
+  const snap = await get(ref(db, "reactions/" + currentReactionKey));  
+  let activeHtml = "";    
+  
+  if(snap.exists()){      
+    let map = {};      
+    snap.forEach(u => { const em = u.val(); map[em] = map[em] || []; map[em].push(u.key); });            
+    for(let e in map){          
+      const iReacted = map[e].includes(name);          
+      const cls = iReacted ? "active-react my-react" : "active-react";          
+      activeHtml += `<span class="${cls}" onclick="window.toggleReact('${e}')">${e} <strong>${map[e].length}</strong></span>`;      
+    }  
+  }  
+  
+  if(!activeHtml) activeHtml = "<div style='font-size:14px; opacity:0.6; padding:10px;'>טרם סומנו אימוג'ים</div>";  
+  document.getElementById("activeReactionsBar").innerHTML = activeHtml;
 };
 
-window.clearChat=()=>{
-  set(ref(db,"messages"),null);
-  showInfo("🧹 נמחק הכל");
-};
+let reacting = false;
+window.toggleReact = async (emoji) => {  
+  if(reacting) return;  
+  reacting = true;
 
-window.toggleChat=async()=>{
-  const snap=await get(ref(db,"chatBlocked"));
-  if(snap.exists()){
-    set(ref(db,"chatBlocked"),null);
-    showInfo("✅ הצ'אט פתוח");
-  }else{
-    set(ref(db,"chatBlocked"),true);
-    showInfo("⛔ הצ'אט נחסם");
+  const rRef = ref(db, `reactions/${currentReactionKey}/${name}`);  
+  const rSnap = await get(rRef);    
+  
+  if(rSnap.exists() && rSnap.val() === emoji){     
+    await remove(rRef);   
+  } else {     
+    await set(rRef, emoji);   
+  }    
+  
+  reacting = false;  
+  await window.renderActiveReactions(); 
+
+  if(document.getElementById("reactionsDetailsModal").classList.contains("active")){    
+    window.openReactionsDetails(currentReactionKey);  
   }
 };
 
-onValue(ref(db,"banned"), snap=>{
-  let html="";
-  snap.forEach(u=>{
-    html+=`<div>${u.key} <button onclick="unban('${u.key}')">בטל</button></div>`;
+onValue(ref(db, "reactions"), snap => {  
+  if(!snap.exists()) return;
+
+  snap.forEach(msgSnap => {    
+    const container = document.getElementById(`react-container-${msgSnap.key}`);    
+    if(!container) return;
+
+    let map = {};    
+    msgSnap.forEach(uSnap => {       
+      const em = uSnap.val();       
+      map[em] = map[em] || [];       
+      map[em].push(window.escapeHTML(uSnap.key));     
+    });        
+    
+    let html = "";    
+    for(let e in map){       
+      const usersStr = map[e].join(",");      
+      html += `<span class="reaction" onclick="window.openReactionsDetails('${msgSnap.key}'); event.stopPropagation();">${e} ${map[e].length}</span>`;     
+    }        
+    
+    container.innerHTML = html;  
   });
-  bannedList.innerHTML=html || "אין חסומים (בישביל לחסום משתמש לחץ פעמיים על ההודעה שלו)";
 });
 
-window.openBanned=()=> bannedModal.classList.add("active");
+window.openReactionsDetails = async (key) => {  
+  currentReactionKey = key;
 
-window.unban=(u)=> remove(ref(db,"banned/"+u));
+  const snap = await get(ref(db, "reactions/" + key));  
+  let map = {};  
+  let usersList = [];
 
-window.closeModal=(id)=> document.getElementById(id).classList.remove("active");
+  if(snap.exists()){    
+    snap.forEach(u => {      
+      const emoji = u.val();      
+      const user = u.key;
 
-window.onclick=()=> menu.style.display="none";
+      map[emoji] = map[emoji] || [];      
+      map[emoji].push(user);
+
+      usersList.push({user, emoji});    
+    });  
+  }
+
+  let topHtml = "";  
+  for(let e in map){    
+    const count = map[e].length;    
+    const iReacted = map[e].includes(name);    
+    const cls = iReacted ? "active-react my-react" : "active-react";
+
+    topHtml += `      
+      <span class="${cls}" onclick="window.toggleReact('${e}')">        
+        ${e} <strong>${count}</strong>      
+      </span>    
+    `;  
+  }
+
+  if(!topHtml){    
+    topHtml = "<div style='opacity:0.6'>אין תגובות</div>";  
+  }
+
+  document.getElementById("topReactionsBar").innerHTML = topHtml;
+
+  let listHtml = "";
+
+  if(usersList.length){    
+    usersList.forEach(u => {      
+      listHtml += `        
+        <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee;">          
+          <span>${window.escapeHTML(u.user)}</span>          
+          <span>${u.emoji}</span>        
+        </div>      
+      `;    
+    });  
+  } else {    
+    listHtml = "<div style='opacity:0.6'>אין משתמשים</div>";  
+  }
+
+  document.getElementById("reactionsUsersList").innerHTML = listHtml;  
+  document.getElementById("reactionsDetailsModal").classList.add("active");
+};
+
+window.openMenu = async (e, key, user) => {  
+  e.stopPropagation(); selectedKey = key; selectedUser = user;  
+  const snap = await get(ref(db, "messages/" + key)); const m = snap.val() || {};  
+  const menu = document.getElementById("menu");
+
+  document.getElementById("editOption").style.display = (user === name && !m.deleted) ? "block" : "none";  
+  document.getElementById("deleteOption").style.display = ((user === name || isAdmin) && !m.deleted) ? "block" : "none";  
+  document.getElementById("restoreOption").style.display = (m.deleted && (user === name || isAdmin)) ? "block" : "none";    
+  
+  if(isAdmin){     
+    document.getElementById("adminOptions").style.display = "block";     
+    document.getElementById("hardDeleteBtn").style.display = m.deleted ? "block" : "none";    
+    document.getElementById("viewHiddenBtn").style.display = m.deleted ? "block" : "none";  
+  } else {     
+    document.getElementById("adminOptions").style.display = "none";   
+  }
+
+  const x = e.touches ? e.touches[0].clientX : e.clientX;   
+  const y = e.touches ? e.touches[0].clientY : e.clientY;    
+  menu.style.display = "block";  
+  const menuRect = menu.getBoundingClientRect();    
+  menu.style.left = Math.max(10, Math.min(x, window.innerWidth - menuRect.width - 10)) + "px";  
+  menu.style.top = Math.max(10, Math.min(y, window.innerHeight - menuRect.height - 10)) + "px";
+}
+
+window.onclick = (e) => { if(!e.target.closest('#menu')) document.getElementById("menu").style.display = "none"; };
+
+window.copyMsg = async () => {  
+  const snap = await get(ref(db, "messages/" + selectedKey)); const m = snap.val();  
+  if(m && !m.deleted){ navigator.clipboard.writeText(m.text); window.showInfo("📄 הטקסט הועתק"); }  
+  document.getElementById("menu").style.display = "none";
+};
+
+window.softDeleteMsg = () => { set(ref(db, "messages/" + selectedKey + "/deleted"), true); document.getElementById("menu").style.display = "none"; };
+window.restoreMsg = () => { set(ref(db, "messages/" + selectedKey + "/deleted"), null); set(ref(db, "messages/" + selectedKey + "/restored"), true); document.getElementById("menu").style.display = "none"; };
+window.hardDeleteMsg = () => { remove(ref(db, "messages/" + selectedKey)); remove(ref(db, "reactions/" + selectedKey)); document.getElementById("menu").style.display = "none"; window.showInfo("❌ נמחק לחלוטין"); };
+
+window.viewDeletedMsg = async () => {  
+  const snap = await get(ref(db, "messages/" + selectedKey)); const m = snap.val();  
+  window.showInfo(`📩 <b>תוכן מוסתר:</b><br><span style='font-weight:normal'>${window.escapeHTML(m.text)}</span>`); document.getElementById("menu").style.display = "none";
+};
+
+window.replyToMsg = async () => {  
+  const snap = await get(ref(db, "messages/" + selectedKey)); const m = snap.val();  
+  if(m.deleted && !isAdmin){ window.showInfo("❗ לא ניתן להגיב להודעה מחוקה"); document.getElementById("menu").style.display = "none"; return; }  
+  replyData = { name: m.name, text: m.text, id: selectedKey };  
+  replyPreview.innerHTML = `<div class="replyBox"><div class="replyClose" onclick="window.cancelReply()">✖</div><b>${window.escapeHTML(m.name)}</b><br>${window.escapeHTML(m.text.length > 60 ? m.text.slice(0,60)+"..." : m.text)}</div>`;  
+  document.getElementById("menu").style.display = "none";  
+  msgInput.focus();
+};
+window.cancelReply = () => { replyData = null; replyPreview.innerHTML = ""; };
+
+window.editMsg = async () => {  
+  const snap = await get(ref(db, "messages/" + selectedKey)); const m = snap.val();  
+  const contentDiv = document.getElementById(selectedKey).querySelector(".msg-content");    
+  const safeText = m.text.replace(/"/g, "&quot;");  
+  contentDiv.innerHTML = `    
+    <div style="display:flex; gap:5px; align-items:center; width:100%; padding:5px 0;">      
+      <input id="editInput" value="${safeText}"       
+      style="flex:1; padding:8px; border-radius:8px; border:1px solid #ccc; font-size:14px;">      
+      <button onclick="window.saveEdit('${selectedKey}')"       
+      style="padding:8px 15px; background:#4da6ff; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">✔</button>    
+    </div>`;  
+  document.getElementById("menu").style.display = "none";
+};
+window.saveEdit = (key) => { const newText = document.getElementById("editInput").value.trim(); if(!newText) return; set(ref(db, "messages/" + key + "/text"), newText); set(ref(db, "messages/" + key + "/edited"), true); };
+
+window.showDetails = async () => {  
+  const snap = await get(ref(db, "messages/" + selectedKey)); const m = snap.val();  
+  document.getElementById("detailsContent").innerHTML = `<div class="detailsSection"><div class="detailsTitle">📩 תוכן ההודעה</div>👤 מאת: ${window.escapeHTML(m.name)}<br>💬 ${m.deleted ? '<i>[נמחקה]</i>' : window.escapeHTML(m.text)}</div><div class="detailsSection"><div class="detailsTitle">👤 פרטי המשתמש</div>שם: ${window.escapeHTML(m.name)}<br>טלפון: ${window.escapeHTML(m.phone) || "-"}<br>אודות: ${window.escapeHTML(m.about) || "-"}</div>`;  
+  document.getElementById('detailsModal').classList.add("active"); document.getElementById("menu").style.display = "none";
+};
+
+window.banUser = () => { set(ref(db, "banned/" + selectedUser), true); window.showInfo("🚫 משתמש נחסם"); document.getElementById("menu").style.display = "none"; };
+window.clearChat = () => { if(confirm("למחוק את כל ההודעות?")){ set(ref(db, "messages"), null); set(ref(db, "reactions"), null); window.showInfo("🧹 הכל נוקה"); }};
+window.toggleChat = async () => { const snap = await get(ref(db, "chatBlocked")); if(snap.exists()){ set(ref(db, "chatBlocked"), null); window.showInfo("✅ צ'אט פתוח"); } else { set(ref(db, "chatBlocked"), true); window.showInfo("⛔ צ'אט חסום"); } };
+
+onValue(ref(db, "banned"), snap => { 
+  let html = ""; 
+  snap.forEach(u => { 
+    html += `<div style="margin-bottom:8px; display:flex; justify-content:space-between;"><span>${window.escapeHTML(u.key)}</span> <button onclick="window.unban('${window.escapeHTML(u.key).replace(/'/g, "\\'")}')" style="padding:4px 8px; font-size:12px; width:auto;">שחרר</button></div>`; 
+  }); 
+  document.getElementById("bannedList").innerHTML = html || "אין חסומים"; 
+});
+
+window.openBanned = () => document.getElementById('bannedModal').classList.add("active");
+window.unban = (u) => remove(ref(db, "banned/" + u));
+
+/* ----- קוד לניהול ומחיקת משתמשים אמיתית ----- */
+let selectedUserToDelete = null;
+
+window.openUsers = async () => {  
+  const snap = await get(ref(db, "messages"));  
+  let users = new Set();
+
+  if(snap.exists()){    
+    snap.forEach(msg => {      
+      const m = msg.val();      
+      if(m.name) users.add(m.name);    
+    });  
+  }
+
+  let html = "";
+
+  users.forEach(u => {    
+    const safeNameEscaped = window.escapeHTML(u).replace(/'/g, "\\'");    
+    html += `      
+      <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">        
+        <span style="font-weight:bold; font-size:14px;">${window.escapeHTML(u)}</span>        
+        <div style="display:flex; gap:5px;">          
+          <button onclick="window.banFromList('${safeNameEscaped}')" style="background:#ff4d4d; padding:6px 12px; font-size:12px; border-radius:6px; color:#fff; border:none; cursor:pointer;">חסום</button>          
+          <button onclick="window.askDeleteUser('${safeNameEscaped}')" style="background:#333; padding:6px 12px; font-size:12px; border-radius:6px; color:#fff; border:none; cursor:pointer;">מחק</button>        
+        </div>      
+      </div>    
+    `;  
+  });
+
+  document.getElementById("usersList").innerHTML = html || "<div style='text-align:center;'>אין משתמשים</div>";  
+  document.getElementById("usersModal").classList.add("active");
+};
+
+window.banFromList = (user) => {  
+  set(ref(db, "banned/" + user), true);  
+  window.showInfo("🚫 המשתמש נחסם");
+};
+
+window.askDeleteUser = (user) => {  
+  selectedUserToDelete = user;  
+  document.getElementById("adminPassInput").value = "";  
+  document.getElementById("adminPassModal").classList.add("active");
+};
+
+window.confirmDeleteUser = async () => {  
+  const pass = document.getElementById("adminPassInput").value;
+
+  if(pass !== "TRHTKNTHRH123"){    
+    window.showInfo("❌ סיסמה שגויה");    
+    return;  
+  }
+
+  if(!selectedUserToDelete) return;
+
+  const snap = await get(ref(db, "messages"));
+
+  if(snap.exists()){    
+    snap.forEach(msg => {      
+      const key = msg.key;      
+      const m = msg.val();
+
+      if(m.name === selectedUserToDelete){        
+        remove(ref(db, "messages/" + key));        
+        remove(ref(db, "reactions/" + key));      
+      }    
+    });  
+  }
+
+  // שולח טריגר למסד הנתונים כדי לנקות את ה-localStorage בצד של המשתמש ולרענן לו את המסך
+  set(ref(db, "deletedUsers/" + selectedUserToDelete), Date.now());
+
+  // הוסרה שורת החסימה (banned), כדי שהמשתמש יוכל להיכנס שוב כמשתמש חדש לגמרי
+  window.showInfo("❌ המשתמש נמחק לחלוטין (וחזר להיות משתמש חדש)");  
+  document.getElementById("adminPassModal").classList.remove("active");  
+  document.getElementById("usersModal").classList.remove("active");
+
+  selectedUserToDelete = null;
+};
+
 </script>
-
 </body>
 </html>
